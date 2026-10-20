@@ -1,25 +1,35 @@
-package ui;
+package com.scc.clinic.ui;
 
-import dao.LogDao;
-import dao.UserDao;
-import model.User;
+import com.scc.clinic.dao.LogDao;
+import com.scc.clinic.dao.UserDao;
+import com.scc.clinic.model.User;
 
 import java.sql.SQLException;
+import java.util.Scanner;
 
-public class MainMenu {
-    private UserDao userDao = new UserDao();
-    private LogDao logDao = new LogDao();
+public class Authentication {
+    private UserDao userDao;
+    private LogDao logDao;
+    private Scanner scanner;
+    private InputHelper input;
 
-    public void show() {
+    public Authentication(UserDao userDao, LogDao logDao, Scanner scanner) {
+        this.userDao = userDao;
+        this.logDao = logDao;
+        this.scanner = scanner;
+        this.input = new InputHelper(scanner);
+    }
+
+    public void start() {
         boolean running = true;
 
         while (running) {
-            InputHelper.printHeader("SCC CLINIC VISIT RECORDING AND MEDICINE STOCK TRACKING");
+            input.printHeader("SCC CLINIC VISIT RECORDING AND MEDICINE STOCK TRACKING");
             System.out.println("  [1] Register Account");
             System.out.println("  [2] Login");
             System.out.println("  [0] Exit");
 
-            int choice = InputHelper.readNumber("\nEnter choice: ", 0, 2);
+            int choice = input.readNumber("\nEnter choice: ", 0, 2);
 
             switch (choice) {
                 case 1:
@@ -37,40 +47,43 @@ public class MainMenu {
     }
 
     private void register() {
-        InputHelper.printHeader("REGISTER ACCOUNT");
+        input.printHeader("REGISTER ACCOUNT");
 
         try {
-            String fullName = InputHelper.readText("Full name: ");
+            String fullName = input.readText("Full name: ");
 
-            String username = InputHelper.readText("Username: ");
+            String username = input.readText("Username: ");
             while (username.length() < 4 || username.contains(" ") || userDao.usernameExists(username)) {
                 if (username.length() < 4 || username.contains(" ")) {
                     System.out.println("  Username must be at least 4 characters with no spaces.");
                 } else {
                     System.out.println("  Username is already taken.");
                 }
-                username = InputHelper.readText("Username: ");
+                username = input.readText("Username: ");
             }
 
-            String password = InputHelper.readText("Password: ");
+            String password = input.readText("Password: ");
             while (password.length() < 6) {
                 System.out.println("  Password must be at least 6 characters.");
-                password = InputHelper.readText("Password: ");
+                password = input.readText("Password: ");
             }
 
-            String confirm = InputHelper.readText("Confirm password: ");
+            String confirm = input.readText("Confirm password: ");
             while (!confirm.equals(password)) {
                 System.out.println("  Passwords do not match.");
-                confirm = InputHelper.readText("Confirm password: ");
+                confirm = input.readText("Confirm password: ");
             }
 
             System.out.println("\nSelect role:");
-            System.out.println("  [1] NURSE");
-            System.out.println("  [2] STUDENT");
-            int roleChoice = InputHelper.readNumber("Enter choice: ", 1, 2);
+            System.out.println("  [1] ADMIN");
+            System.out.println("  [2] NURSE");
+            System.out.println("  [3] STUDENT");
+            int roleChoice = input.readNumber("Enter choice: ", 1, 3);
 
             String role;
             if (roleChoice == 1) {
+                role = "ADMIN";
+            } else if (roleChoice == 2) {
                 role = "NURSE";
             } else {
                 role = "STUDENT";
@@ -86,14 +99,14 @@ public class MainMenu {
             System.out.println("Error: " + e.getMessage());
         }
 
-        InputHelper.pause();
+        input.pause();
     }
 
     private void login() {
-        InputHelper.printHeader("LOGIN");
+        input.printHeader("LOGIN");
 
-        String username = InputHelper.readText("Username: ");
-        String password = InputHelper.readText("Password: ");
+        String username = input.readText("Username: ");
+        String password = input.readText("Password: ");
 
         try {
             User user = userDao.login(username, password);
@@ -106,24 +119,33 @@ public class MainMenu {
                 }
                 logDao.addLog(accountId, "LOGIN", username, "Failed login");
                 System.out.println("\nInvalid username or password.");
-                InputHelper.pause();
+                input.pause();
             } else if (user.status().equals("PENDING")) {
                 logDao.addLog(user.id(), "LOGIN", username, "Blocked: account is PENDING");
                 System.out.println("\nYour account is still PENDING. Please wait for the Admin to approve it.");
-                InputHelper.pause();
+                input.pause();
             } else if (user.status().equals("INACTIVE")) {
                 logDao.addLog(user.id(), "LOGIN", username, "Blocked: account is INACTIVE");
                 System.out.println("\nYour account is deactivated. Please contact the Admin.");
-                InputHelper.pause();
+                input.pause();
             } else {
                 logDao.addLog(user.id(), "LOGIN", username, "Login successful");
                 System.out.println("\nLogin successful! Welcome, " + user.fullName() + "!");
-                DashboardMenu dashboard = new DashboardMenu(user);
-                dashboard.show();
+                openMenu(user);
             }
         } catch (SQLException e) {
             System.out.println("Error: " + e.getMessage());
-            InputHelper.pause();
+            input.pause();
+        }
+    }
+
+    private void openMenu(User user) {
+        if (user.role().equals("ADMIN")) {
+            new AdminMenu(user, userDao, logDao, scanner).show();
+        } else if (user.role().equals("NURSE")) {
+            new NurseMenu(user, userDao, logDao, scanner).show();
+        } else {
+            new StudentMenu(user, userDao, logDao, scanner).show();
         }
     }
 }

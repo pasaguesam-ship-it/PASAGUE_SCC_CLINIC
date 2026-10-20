@@ -1,6 +1,6 @@
-package dao;
+package com.scc.clinic.dao;
 
-import model.User;
+import com.scc.clinic.model.User;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

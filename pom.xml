@@ -30,14 +30,13 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.5.0</version>
                 <configuration>
-                    <mainClass>Main</mainClass>
+                    <mainClass>com.scc.clinic.Main</mainClass>
                 </configuration>
             </plugin>
         </plugins>
