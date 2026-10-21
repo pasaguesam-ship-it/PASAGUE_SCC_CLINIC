@@ -8,6 +8,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDao {
 
@@ -17,8 +19,7 @@ public class UserDao {
     }
 
     public void register(String fullName, String username, String password, String role) throws SQLException {
-        String sql = "INSERT INTO tbl_accounts (a_full_name, a_username, a_password, a_role, a_status) "
-                + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO tbl_accounts (a_full_name, a_username, a_password, a_role, a_status) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -39,20 +40,56 @@ public class UserDao {
             ps.setString(1, username);
             ResultSet rs = ps.executeQuery();
 
+            User user = null;
             if (rs.next()) {
-                User user = new User(
-                        rs.getInt("a_id"),
-                        rs.getString("a_full_name"),
-                        rs.getString("a_username"),
-                        rs.getString("a_password"),
-                        rs.getString("a_role"),
-                        rs.getString("a_status"),
-                        rs.getString("a_created_at"));
-                rs.close();
-                return user;
+                user = toUser(rs);
             }
             rs.close();
-            return null;
+            return user;
+        }
+    }
+
+    public List<User> getAllUsers() throws SQLException {
+        String sql = "SELECT * FROM tbl_accounts ORDER BY a_id";
+        List<User> users = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                users.add(toUser(rs));
+            }
+            rs.close();
+        }
+        return users;
+    }
+
+    public List<User> getPendingUsers() throws SQLException {
+        String sql = "SELECT * FROM tbl_accounts WHERE a_status = ? ORDER BY a_id";
+        List<User> users = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, "PENDING");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                users.add(toUser(rs));
+            }
+            rs.close();
+        }
+        return users;
+    }
+
+    public boolean approveUser(int userId) throws SQLException {
+        String sql = "UPDATE tbl_accounts SET a_status = ? WHERE a_id = ? AND a_status = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, "APPROVED");
+            ps.setInt(2, userId);
+            ps.setString(3, "PENDING");
+            int rows = ps.executeUpdate();
+            return rows > 0;
         }
     }
 
@@ -68,6 +105,17 @@ public class UserDao {
             return user;
         }
         return null;
+    }
+
+    private User toUser(ResultSet rs) throws SQLException {
+        return new User(
+                rs.getInt("a_id"),
+                rs.getString("a_full_name"),
+                rs.getString("a_username"),
+                rs.getString("a_password"),
+                rs.getString("a_role"),
+                rs.getString("a_status"),
+                rs.getString("a_created_at"));
     }
 
     public static String hashPassword(String password) {

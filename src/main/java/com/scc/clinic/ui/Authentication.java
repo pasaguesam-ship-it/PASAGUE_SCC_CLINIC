@@ -53,9 +53,10 @@ public class Authentication {
             String fullName = input.readText("Full name: ");
 
             String username = input.readText("Username: ");
-            while (username.length() < 4 || username.contains(" ") || userDao.usernameExists(username)) {
-                if (username.length() < 4 || username.contains(" ")) {
-                    System.out.println("  Username must be at least 4 characters with no spaces.");
+            while (username.length() < 4 || username.length() > 15 || username.contains(" ")
+                    || userDao.usernameExists(username)) {
+                if (username.length() < 4 || username.length() > 15 || username.contains(" ")) {
+                    System.out.println("  Username must be 4 to 15 characters with no spaces.");
                 } else {
                     System.out.println("  Username is already taken.");
                 }

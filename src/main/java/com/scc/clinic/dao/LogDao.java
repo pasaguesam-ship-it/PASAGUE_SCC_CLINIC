@@ -7,8 +7,11 @@ import java.sql.SQLException;
 public class LogDao {
 
     public void addLog(Integer accountId, String action, String username, String details) {
-        String sql = "INSERT INTO tbl_logs (a_id, l_action, l_username_entered, l_table_affected, l_record_id, l_details) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        addLog(accountId, action, username, accountId, details);
+    }
+
+    public void addLog(Integer accountId, String action, String username, Integer recordId, String details) {
+        String sql = "INSERT INTO tbl_logs (a_id, l_action, l_username_entered, l_table_affected, l_record_id, l_details) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -16,7 +19,7 @@ public class LogDao {
             ps.setString(2, action);
             ps.setString(3, username);
             ps.setString(4, "tbl_accounts");
-            ps.setObject(5, accountId);
+            ps.setObject(5, recordId);
             ps.setString(6, details);
             ps.executeUpdate();
         } catch (SQLException e) {
