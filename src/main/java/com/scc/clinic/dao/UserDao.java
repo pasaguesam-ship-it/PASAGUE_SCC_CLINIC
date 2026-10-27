@@ -93,6 +93,19 @@ public class UserDao {
         }
     }
 
+    public boolean updateUserRoleAndStatus(int userId, String newRole, String newStatus) throws SQLException {
+        String sql = "UPDATE tbl_accounts SET a_role = ?, a_status = ? WHERE a_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newRole.toUpperCase());
+            ps.setString(2, newStatus.toUpperCase());
+            ps.setInt(3, userId);
+            int rows = ps.executeUpdate();
+            return rows > 0;
+        }
+    }
+
     public User login(String username, String password) throws SQLException {
         User user = findByUsername(username);
 
